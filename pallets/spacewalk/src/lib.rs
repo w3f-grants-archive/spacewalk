@@ -24,7 +24,7 @@ pub use pallet::*;
 use pallet_transaction_payment::Config as PaymentConfig;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::{
-	traits::{Convert, StaticLookup, Printable},
+	traits::{Convert, StaticLookup},
 	RuntimeDebug,
 };
 use sp_std::{convert::From, prelude::*, str};
