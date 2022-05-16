@@ -19,10 +19,9 @@ use sp_std::{
 };
 
 pub use bitcoin::types::H256Le;
+
 pub mod currency;
-
-type CurrencyId = currency::CurrencyId;
-
+pub use currency::CurrencyId as StellarCurrencyId;
 pub trait BalanceToFixedPoint<FixedPoint> {
 	fn to_fixed(self) -> Option<FixedPoint>;
 }
@@ -400,4 +399,125 @@ pub trait CurrencyInfo {
 	fn name(&self) -> &str;
 	fn symbol(&self) -> &str;
 	fn decimals(&self) -> u8;
+}
+
+macro_rules! create_currency_id {
+    ($(#[$meta:meta])*
+	$vis:vis enum TokenSymbol {
+        $($(#[$vmeta:meta])* $symbol:ident($name:expr, $deci:literal) = $val:literal,)*
+    }) => {
+		$(#[$meta])*
+		$vis enum TokenSymbol {
+			$($(#[$vmeta])* $symbol = $val,)*
+		}
+
+        $(pub const $symbol: TokenSymbol = TokenSymbol::$symbol;)*
+
+        impl TryFrom<u8> for TokenSymbol {
+			type Error = ();
+
+			fn try_from(v: u8) -> Result<Self, Self::Error> {
+				match v {
+					$($val => Ok(TokenSymbol::$symbol),)*
+					_ => Err(()),
+				}
+			}
+		}
+
+		impl Into<u8> for TokenSymbol {
+			fn into(self) -> u8 {
+				match self {
+					$(TokenSymbol::$symbol => ($val),)*
+				}
+			}
+		}
+
+        impl TokenSymbol {
+			pub fn get_info() -> Vec<(&'static str, u32)> {
+				vec![
+					$((stringify!($symbol), $deci),)*
+				]
+			}
+
+            pub const fn one(&self) -> Balance {
+                10u128.pow(self.decimals() as u32)
+            }
+
+            const fn decimals(&self) -> u8 {
+				match self {
+					$(TokenSymbol::$symbol => $deci,)*
+				}
+			}
+		}
+
+		impl CurrencyInfo for TokenSymbol {
+			fn name(&self) -> &str {
+				match self {
+					$(TokenSymbol::$symbol => $name,)*
+				}
+			}
+			fn symbol(&self) -> &str {
+				match self {
+					$(TokenSymbol::$symbol => stringify!($symbol),)*
+				}
+			}
+			fn decimals(&self) -> u8 {
+				self.decimals()
+			}
+		}
+
+		impl TryFrom<Vec<u8>> for TokenSymbol {
+			type Error = ();
+			fn try_from(v: Vec<u8>) -> Result<TokenSymbol, ()> {
+				match v.as_slice() {
+					$(bstringify!($symbol) => Ok(TokenSymbol::$symbol),)*
+					_ => Err(()),
+				}
+			}
+		}
+    }
+}
+
+create_currency_id! {
+	#[derive(Encode, Decode, Eq, Hash, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
+	#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+	#[repr(u8)]
+	pub enum TokenSymbol {
+		DOT("Polkadot", 10) = 0,
+		IBTC("interBTC", 8) = 1,
+		INTR("Interlay", 10) = 2,
+
+		KSM("Kusama", 12) = 10,
+		KBTC("kBTC", 8) = 11,
+		KINT("Kintsugi", 12) = 12,
+	}
+}
+
+#[derive(
+	Encode,
+	Decode,
+	Eq,
+	Hash,
+	PartialEq,
+	Copy,
+	Clone,
+	RuntimeDebug,
+	PartialOrd,
+	Ord,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum CurrencyId {
+	Token(TokenSymbol),
+	StellarToken(StellarCurrencyId),
+}
+
+impl CurrencyId {
+	pub const fn one(&self) -> Balance {
+		match self {
+			CurrencyId::Token(token) => token.one(),
+			CurrencyId::StellarToken(_) => 10u128.pow(12),
+		}
+	}
 }

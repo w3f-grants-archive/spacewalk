@@ -19,7 +19,9 @@ pub type AssetIssuer = [u8; 32];
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Encode, Decode, Eq, Hash, PartialEq, Copy, Clone, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
 	Native,
@@ -27,6 +29,9 @@ pub enum CurrencyId {
 	AlphaNum4 { code: Bytes4, issuer: AssetIssuer },
 	AlphaNum12 { code: Bytes12, issuer: AssetIssuer },
 }
+
+/// Balance of an account.
+pub type Balance = u128;
 
 impl Default for CurrencyId {
 	fn default() -> Self {
