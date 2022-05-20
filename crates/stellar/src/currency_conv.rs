@@ -1,8 +1,8 @@
 use crate::currency::CurrencyId;
+use crate::substrate_sdk::{Asset, PublicKey};
 use frame_support::error::LookupError;
 use sp_runtime::traits::{Convert, StaticLookup};
 use sp_std::{convert::TryInto, str::from_utf8, vec::Vec};
-use substrate_stellar_sdk::{Asset, PublicKey};
 
 pub struct CurrencyConversion;
 
@@ -38,7 +38,7 @@ impl Convert<(Vec<u8>, Vec<u8>), Result<CurrencyId, ()>> for StringCurrencyConve
 
 #[cfg(test)]
 mod tests {
-	use substrate_stellar_sdk::types::{AssetAlphaNum12, AssetAlphaNum4};
+	use crate::substrate_sdk::types::{AssetAlphaNum12, AssetAlphaNum4};
 
 	use super::*;
 
